@@ -2,6 +2,8 @@
 
 Browse devdocs.io documents inside Emacs!
 
+![](images/screenshot.png)
+
 ## Features
 
 - Browse API documentations provided by [devdocs.io](https://devdocs.io/) inside Emacs using [EWW](https://www.emacswiki.org/emacs/eww), with some custom features:

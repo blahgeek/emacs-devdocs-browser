@@ -174,7 +174,9 @@ See https://prismjs.com/ for list of language names."
       (let ((url-parsed (url-generic-parse-url url))
             (mtime (plist-get (plist-get devdocs-browser--eww-data :doc) :mtime)))
         (setf (url-filename url-parsed)
-              (format "%s.html?%s" (url-filename url-parsed) mtime))
+              (if (equal (url-type url-parsed) "file")
+                  (concat (url-filename url-parsed) ".html")
+                (format "%s.html?%s" (url-filename url-parsed) mtime)))
         (setq url (url-recreate-url url-parsed)))))
   url)
 
