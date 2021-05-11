@@ -617,37 +617,40 @@ When called interactively, user can choose from the list."
                   (devdocs-browser-list-installed-slugs)
                   nil t nil nil def)))))
 
-  (let* ((slugs
-          (delq nil (mapcar
-                     (lambda (slug-or-name)
-                       (plist-get
-                        (devdocs-browser-find-installed-doc slug-or-name)
-                        :slug))
-                     slug-or-name-list)))
-         (rows
-          (mapcan (lambda (slug)
-                    (let* ((doc (devdocs-browser--load-doc slug))
-                           (index (plist-get doc :index))
-                           (entries (plist-get index :entries)))
-                      (mapcar (lambda (entry)
-                                (let ((name (plist-get entry :name))
-                                      (path (plist-get entry :path))
-                                      (type (plist-get entry :type)))
-                                  (cons (format "%s: %s (%s)" slug name type)
-                                        (list doc path))))
-                              entries)))
-                  slugs))
-         (selected-name
-          (completing-read (format "Devdocs browser (%s): "
-                                   (mapconcat #'identity slugs ","))
-                           rows
-                           ;; require-match
-                           nil t
-                           (thing-at-point 'word t)))
-         (selected-row
-          (assoc selected-name rows)))
+  (let ((current-word-regex
+         (when-let ((word (thing-at-point 'word t)))
+           (concat "\\<" (regexp-quote word) "\\>")))
+        slugs rows def def-name)
+    (dolist (slug-or-name slug-or-name-list)
+      (when-let* ((doc-simple (devdocs-browser-find-installed-doc slug-or-name))
+                  (slug (plist-get doc-simple :slug))
+                  (doc (devdocs-browser--load-doc slug))
+                  (index (plist-get doc :index))
+                  (entries (plist-get index :entries)))
+        (setq slugs (push slug slugs))
+        (let ((new-rows
+               (mapcar
+                (lambda (entry)
+                  (let* ((name (plist-get entry :name))
+                         (path (plist-get entry :path))
+                         (type (plist-get entry :type))
+                         (title (format "%s: %s (%s)" slug name type)))
+                    (when (and (null def) current-word-regex)
+                      (when (string-match-p current-word-regex name)
+                        (setq def title
+                              def-name name)))
+                    (cons title (list doc path))))
+                entries)))
+          (setq rows (append new-rows rows)))))
+    (let* ((selected-name
+            (completing-read
+             (format "Devdocs browser [%s] (default %s): "
+                     (mapconcat #'identity slugs ",") def-name)
+             rows nil t nil nil def))
+           (selected-row
+            (assoc selected-name rows)))
     (when selected-row
-      (apply #'devdocs-browser--eww-open (cdr selected-row)))))
+      (apply #'devdocs-browser--eww-open (cdr selected-row))))))
 
 ;;;###autoload
 (defun devdocs-browser-open ()
