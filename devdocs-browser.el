@@ -455,11 +455,11 @@ You may need to call `devdocs-browser-update-docs' first."
 
 (defun devdocs-browser-list-installed-slugs ()
   "Get a list of installed docs' slug name."
-  (directory-files
-   (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory)
-   nil
-   ;; ignore ".", ".." and hidden files
-   "^[^.].*"))
+  (let ((dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory)))
+    (when (file-exists-p dir)
+      (directory-files dir nil
+                       ;; ignore ".", ".." and hidden files
+                       "^[^.].*"))))
 
 (defun devdocs-browser-find-installed-doc (slug-or-name)
   "Find installed doc by SLUG-OR-NAME."
