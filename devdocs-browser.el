@@ -138,7 +138,6 @@ See https://prismjs.com/ for list of language names."
 (defun devdocs-browser--eww-tag-h1 (dom)
   "Rendering function for h1 DOM.  Maybe use it as title."
   (when (zerop (length (plist-get eww-data :title)))
-    (message "updating title")
     (eww-tag-title dom))
   (shr-tag-h1 dom))
 
@@ -629,9 +628,7 @@ When called interactively, user can choose from the list."
           (mapcan (lambda (slug)
                     (let* ((doc (devdocs-browser--load-doc slug))
                            (index (plist-get doc :index))
-                           (entries (plist-get index :entries))
-                           (mtime (plist-get doc :mtime)))
-                      (message "%s: %s" slug mtime)
+                           (entries (plist-get index :entries)))
                       (mapcar (lambda (entry)
                                 (let ((name (plist-get entry :name))
                                       (path (plist-get entry :path))
