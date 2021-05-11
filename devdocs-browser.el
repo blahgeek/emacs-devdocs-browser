@@ -51,7 +51,8 @@
 
 (defcustom devdocs-browser-major-mode-docs-alist
   '((c++-mode . ("cpp"))
-    (python-mode . ("Python")))
+    (python-mode . ("Python"))
+    (emacs-lisp-mode . ("elisp")))
   "Alist of MAJOR-MODE and list of docset names.
 When calling `devdocs-browser-open', this variable will be used
 to pick a list of docsets based on the current MAJOR-MODE.
