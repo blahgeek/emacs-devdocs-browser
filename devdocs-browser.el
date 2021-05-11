@@ -593,8 +593,8 @@ When called interactively, user can choose from the list."
       (remove-hook 'eww-mode-hook #'devdocs-browser-eww-mode)
       (remove-hook 'eww-mode-hook local-hook))))
 
-(defun devdocs-browser--default-active-slugs ()
-  "Default active doc slugs for current buffer."
+(defun devdocs-browser--default-active-slugs (&optional no-fallback-all)
+  "Default active doc slugs for current buffer, fallback to all slugs if not NO-FALLBACK-ALL."
   (if devdocs-browser--eww-data
       (list (plist-get (plist-get devdocs-browser--eww-data :doc) :slug))
     (let ((names (or devdocs-browser-active-docs
@@ -605,17 +605,18 @@ When called interactively, user can choose from the list."
                     (slug (plist-get doc :slug)))
           (setq slugs (push slug slugs))))
       (or slugs
-          (devdocs-browser-list-installed-slugs)))))
+          (and (not no-fallback-all) (devdocs-browser-list-installed-slugs))))))
 
 ;;;###autoload
 (defun devdocs-browser-open-in (slug-or-name-list)
   "Open entry in specified docs SLUG-OR-NAME-LIST.
 When called interactively, user can choose from the list."
   (interactive
-   (list (list (completing-read
-                "Select doc: "
-                (devdocs-browser-list-installed-slugs)
-                nil t))))
+   (let ((def (car (devdocs-browser--default-active-slugs t))))
+     (list (list (completing-read
+                  (format "Select doc (default %s): " def)
+                  (devdocs-browser-list-installed-slugs)
+                  nil t nil nil def)))))
 
   (let* ((slugs
           (delq nil (mapcar
