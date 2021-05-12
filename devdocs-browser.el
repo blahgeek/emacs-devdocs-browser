@@ -169,10 +169,13 @@ See https://prismjs.com/ for list of language names."
   ;; shr-expand-url may be call in a temp buffer
   ;; we need to temporary bind this buffer to access the buffer-local variable.
   (with-current-buffer (window-buffer)
-    (when (and devdocs-browser--eww-data
-               (not (string-match-p "\\.html" url)))
-      (let ((url-parsed (url-generic-parse-url url))
-            (mtime (plist-get (plist-get devdocs-browser--eww-data :doc) :mtime)))
+    (let ((url-parsed (url-generic-parse-url url))
+          (root-url-parsed (url-generic-parse-url (plist-get eww-data :url)))
+          (mtime (plist-get (plist-get devdocs-browser--eww-data :doc) :mtime)))
+      (when (and mtime
+                 (equal (url-type url-parsed) (url-type root-url-parsed))
+                 (equal (url-host url-parsed) (url-host root-url-parsed))
+                 (not (string-match-p "\\.html" url)))
         (setf (url-filename url-parsed)
               (if (equal (url-type url-parsed) "file")
                   (concat (url-filename url-parsed) ".html")
