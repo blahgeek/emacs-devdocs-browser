@@ -28,6 +28,7 @@
 (require 'files)
 (require 'shr)
 (require 'eww)
+(require 'eldoc)
 
 
 (defgroup devdocs-browser nil
@@ -183,6 +184,29 @@ See https://prismjs.com/ for list of language names."
         (setq url (url-recreate-url url-parsed)))))
   url)
 
+(defun devdocs-browser--eww-link-eldoc (&optional _)
+  "Show URL link or description at current point."
+  (when-let* ((url (get-text-property (point) 'shr-url))
+              (url-parsed (url-generic-parse-url url)))
+    (if-let* ((doc (plist-get devdocs-browser--eww-data :doc))
+              (slug (plist-get doc :slug))
+              (index (plist-get doc :index))
+              (entries (plist-get index :entries))
+              (path (car (split-string (url-filename url-parsed) "\\.html")))
+              (path (if (url-target url-parsed)
+                        (concat path "#" (url-target url-parsed))
+                      path))
+              (entry (seq-find
+                      (lambda (x) (equal
+                               (concat "/" slug "/" (plist-get x :path))
+                               path))
+                      entries)))
+        (concat
+         (propertize (plist-get entry :name) 'face 'font-lock-keyword-face)
+         (format " (%s):" (plist-get entry :type))
+         (propertize (format " /%s" (plist-get entry :path)) 'face 'italic))
+      (format "External link: %s" (propertize url 'face 'italic)))))
+
 (defun devdocs-browser--eww-page-targets ()
   "Return targets in current page, result is an alist of name and target."
   (when-let* ((doc (plist-get devdocs-browser--eww-data :doc))
@@ -240,7 +264,8 @@ See https://prismjs.com/ for list of language names."
                         (h3 . devdocs-browser--eww-tag-h3)
                         (h4 . devdocs-browser--eww-tag-h4)
                         (h5 . devdocs-browser--eww-tag-h5))))
-  (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url))
+  (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
+  (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t))
 
 (defvar devdocs-browser--docs-dir "docs")
 (defvar devdocs-browser--index-json-filename "index.json")
