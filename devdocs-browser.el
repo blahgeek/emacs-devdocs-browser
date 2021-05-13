@@ -603,7 +603,7 @@ When called interactively, user can choose from the list."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
          base-url url)
-    ;; cannot use format directory because `path' may contains #query
+    ;; cannot use format directly because `path' may contains #query
     (let ((offline-data-dir (devdocs-browser-offline-data-dir slug)))
       (if offline-data-dir
           (progn
