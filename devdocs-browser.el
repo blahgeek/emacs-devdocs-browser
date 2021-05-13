@@ -28,6 +28,7 @@
 (require 'files)
 (require 'shr)
 (require 'eww)
+(require 'eldoc)
 
 
 (defgroup devdocs-browser nil
@@ -169,16 +170,44 @@ See https://prismjs.com/ for list of language names."
   ;; shr-expand-url may be call in a temp buffer
   ;; we need to temporary bind this buffer to access the buffer-local variable.
   (with-current-buffer (window-buffer)
-    (when (and devdocs-browser--eww-data
-               (not (string-match-p "\\.html" url)))
-      (let ((url-parsed (url-generic-parse-url url))
-            (mtime (plist-get (plist-get devdocs-browser--eww-data :doc) :mtime)))
+    (let ((url-parsed (url-generic-parse-url url))
+          (root-url-parsed (url-generic-parse-url (plist-get eww-data :url)))
+          (mtime (plist-get (plist-get devdocs-browser--eww-data :doc) :mtime)))
+      (when (and mtime
+                 (equal (url-type url-parsed) (url-type root-url-parsed))
+                 (equal (url-host url-parsed) (url-host root-url-parsed))
+                 (not (string-match-p "\\.html" url)))
         (setf (url-filename url-parsed)
               (if (equal (url-type url-parsed) "file")
                   (concat (url-filename url-parsed) ".html")
                 (format "%s.html?%s" (url-filename url-parsed) mtime)))
         (setq url (url-recreate-url url-parsed)))))
   url)
+
+(defun devdocs-browser--eww-link-eldoc (&optional _)
+  "Show URL link or description at current point."
+  (when-let* ((url (get-text-property (point) 'shr-url))
+              (url-parsed (url-generic-parse-url url)))
+    (if-let* ((base-url-parsed (url-generic-parse-url (plist-get devdocs-browser--eww-data :base-url)))
+              (doc (plist-get devdocs-browser--eww-data :doc))
+              (slug (plist-get doc :slug))
+              (index (plist-get doc :index))
+              (entries (plist-get index :entries))
+              (path (car (split-string (url-filename url-parsed) "\\.html")))
+              (path (if (url-target url-parsed)
+                        (concat path "#" (url-target url-parsed))
+                      path))
+              (path (if (string-prefix-p (url-filename base-url-parsed) path)
+                        (substring path (length (url-filename base-url-parsed)))
+                      path))
+              (entry (seq-find
+                      (lambda (x) (equal (plist-get x :path) path))
+                      entries)))
+        (concat
+         (propertize (plist-get entry :name) 'face 'font-lock-keyword-face)
+         (format " (%s):" (plist-get entry :type))
+         (propertize (format " %s" (plist-get entry :path)) 'face 'italic))
+      (format "External link: %s" (propertize url 'face 'italic)))))
 
 (defun devdocs-browser--eww-page-targets ()
   "Return targets in current page, result is an alist of name and target."
@@ -237,7 +266,8 @@ See https://prismjs.com/ for list of language names."
                         (h3 . devdocs-browser--eww-tag-h3)
                         (h4 . devdocs-browser--eww-tag-h4)
                         (h5 . devdocs-browser--eww-tag-h5))))
-  (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url))
+  (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
+  (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t))
 
 (defvar devdocs-browser--docs-dir "docs")
 (defvar devdocs-browser--index-json-filename "index.json")
@@ -571,19 +601,25 @@ When called interactively, user can choose from the list."
   "Open PATH for document DOC using eww."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
-         (local-hook (lambda () (setq-local devdocs-browser--eww-data
-                                        (list :doc doc
-                                              :path path))))
-         url)
+         base-url local-hook url)
     ;; cannot use format directory because `path' may contains #query
     (let ((offline-data-dir (devdocs-browser-offline-data-dir slug)))
       (if offline-data-dir
           (progn
+            (setq base-url (concat "file://" offline-data-dir))
             (setq url (url-generic-parse-url (concat "file://" offline-data-dir path)))
             (setf (url-filename url) (concat (url-filename url) ".html")))
-        (setq url (url-generic-parse-url (concat devdocs-browser-doc-base-url path)))
+        (setq base-url (concat devdocs-browser-doc-base-url slug "/"))
+        (setq url (url-generic-parse-url
+                   (concat devdocs-browser-doc-base-url slug "/" path)))
         (setf (url-filename url)
-              (format "/%s%s.html?%s" slug (url-filename url) mtime))))
+              (format "%s.html?%s" (url-filename url) mtime))))
+
+    (setq local-hook
+          (lambda () (setq-local devdocs-browser--eww-data
+                             (list :doc doc
+                                   :path path
+                                   :base-url base-url))))
 
     (add-hook 'eww-mode-hook #'devdocs-browser-eww-mode)
     (add-hook 'eww-mode-hook local-hook)
