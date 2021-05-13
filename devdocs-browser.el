@@ -267,7 +267,8 @@ See https://prismjs.com/ for list of language names."
                         (h4 . devdocs-browser--eww-tag-h4)
                         (h5 . devdocs-browser--eww-tag-h5))))
   (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
-  (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t))
+  (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t)
+  (eldoc-mode))
 
 (defvar devdocs-browser--docs-dir "docs")
 (defvar devdocs-browser--index-json-filename "index.json")
@@ -601,7 +602,7 @@ When called interactively, user can choose from the list."
   "Open PATH for document DOC using eww."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
-         base-url local-hook url)
+         base-url url)
     ;; cannot use format directory because `path' may contains #query
     (let ((offline-data-dir (devdocs-browser-offline-data-dir slug)))
       (if offline-data-dir
@@ -615,18 +616,15 @@ When called interactively, user can choose from the list."
         (setf (url-filename url)
               (format "%s.html?%s" (url-filename url) mtime))))
 
-    (setq local-hook
-          (lambda () (setq-local devdocs-browser--eww-data
-                             (list :doc doc
-                                   :path path
-                                   :base-url base-url))))
+    (switch-to-buffer-other-window (format "*devdocs-%s*" slug))
+    (eww-mode)
+    (devdocs-browser-eww-mode)
+    (setq-local devdocs-browser--eww-data
+                (list :doc doc
+                      :path path
+                      :base-url base-url))
 
-    (add-hook 'eww-mode-hook #'devdocs-browser-eww-mode)
-    (add-hook 'eww-mode-hook local-hook)
-    (unwind-protect
-        (eww-browse-url (url-recreate-url url)) ;;)
-      (remove-hook 'eww-mode-hook #'devdocs-browser-eww-mode)
-      (remove-hook 'eww-mode-hook local-hook))))
+    (eww (url-recreate-url url))))
 
 (defun devdocs-browser--default-active-slugs (&optional no-fallback-all)
   "Default active doc slugs for current buffer, fallback to all slugs if not NO-FALLBACK-ALL."
