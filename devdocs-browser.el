@@ -119,6 +119,12 @@ See https://prismjs.com/ for list of language names."
   "Return fontified string for pre DOM."
   (with-temp-buffer
     (shr-generic dom)
+    (when (> shr-indentation 0)
+      (save-excursion
+        (goto-char (point-min))
+        (while (not (eobp))
+          (shr-indent)
+          (forward-line 1))))
     (let* ((language (dom-attr dom 'data-language))
            (mode (cdr (or (assoc language devdocs-browser-highlight-lang-mode-alist)
                           (assoc language devdocs-browser-highlight-lang-mode-alist-default)))))
