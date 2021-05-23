@@ -111,7 +111,8 @@ See https://prismjs.com/ for list of language names."
     ("py" . python-mode)
     ("ruby" . ruby-mode)
     ("rb" . ruby-mode)
-    ("sql" . sql-mode))
+    ("sql" . sql-mode)
+    ("typescript" . typescript-mode))
   "Default value for `devdocs-browser-highlight-lang-mode-alist'.")
 
 
