@@ -86,6 +86,7 @@ See https://prismjs.com/ for list of language names."
     ("clike" . c-mode)
     ("javascript" . js-mode)
     ("js" . js-mode)
+    ("jsx" . js-mode)
     ("bash" . sh-mode)
     ("shell" . sh-mode)
     ("c" . c-mode)
