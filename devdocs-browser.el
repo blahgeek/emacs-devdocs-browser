@@ -624,7 +624,7 @@ When called interactively, user can choose from the list."
         (setf (url-filename url)
               (format "%s.html?%s" (url-filename url) mtime))))
 
-    (switch-to-buffer-other-window (format "*devdocs-%s*" slug))
+    (pop-to-buffer (format "*devdocs-%s*" slug))
     (eww-mode)
     (devdocs-browser-eww-mode)
     (setq-local devdocs-browser--eww-data
