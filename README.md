@@ -58,8 +58,8 @@ Useful functions:
 - `devdocs-browser-download-offline-data`
 - `devdocs-browser-remove-offline-data`
 
-Each docset have a ~SLUG~ and a ~NAME~.
-~SLUG~ is the unique id (e.g. `python~3.8`) and ~NAME~ is a human-readable string (e.g. `Python`).
+Each docset have a *SLUG* and a *NAME*.
+*SLUG* is the unique id (e.g. `python~3.8`) and *NAME* is a human-readable string (e.g. `Python`).
 Pay attention to the type of the arguments (usually `slug` or `slug-or-name`) of each functions.
 
 ### Open Docset Entry
