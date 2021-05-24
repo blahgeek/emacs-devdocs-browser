@@ -1,4 +1,4 @@
-;;; devdocs-browser.el --- Browser documents in devdocs.io  -*- lexical-binding: t; -*-
+;;; devdocs-browser.el --- Browse devdocs.io documents inside Emacs  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021
 
@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; Browse devdocs documents in Emacs.
+;; Browse devdocs.io documents inside Emacs.
 
 ;;; Code:
 
