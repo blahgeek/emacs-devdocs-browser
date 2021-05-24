@@ -20,7 +20,7 @@ This package is not submitted to MELPA yet,
 you need to manually clone this git repo and add it to `load-path`,
 or use some package manager like [straight.el](https://github.com/raxod502/straight.el).
 
-This package does not depend on other libraries and should work with emacs > 26.1.
+This package does not depend on other libraries and should work with emacs >= 27.1.
 
 2. Invoke `M-x devdocs-browser-install-doc` to install some docs.
 3. Invoke `M-x devdocs-browser-open` or `M-x devdocs-browser-open-in` to browse some entry.

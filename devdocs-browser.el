@@ -1,10 +1,12 @@
-;;; devdocs-browser.el --- Browse devdocs.io documents inside Emacs  -*- lexical-binding: t; -*-
+;;; devdocs-browser.el --- Browse devdocs.io documents using EWW  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021
 
 ;; Author: blahgeek <i@blahgeek.com>
+;; URL: https://github.com/blahgeek/emacs-devdocs-browser
+;; Version: 20210525
 ;; Keywords: docs, help, tools
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Browse devdocs.io documents inside Emacs.
+;; Browse devdocs.io documents inside Emacs using EWW.
 
 ;;; Code:
 
@@ -263,8 +265,8 @@ See https://prismjs.com/ for list of language names."
   :interactive nil
   :group 'devdocs-browser
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c r") #'devdocs-browser-eww-goto-target)
-            (define-key map (kbd "C-c o") #'devdocs-browser-eww-open-in-default-browser)
+            (define-key map (kbd "C-c C-r") #'devdocs-browser-eww-goto-target)
+            (define-key map (kbd "C-c C-o") #'devdocs-browser-eww-open-in-default-browser)
             map)
   (setq-local shr-external-rendering-functions
               (append shr-external-rendering-functions
