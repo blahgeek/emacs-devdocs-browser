@@ -671,7 +671,9 @@ When called interactively, user can choose from the list."
   (interactive
    (let ((def (car (devdocs-browser--default-active-slugs t))))
      (list (list (completing-read
-                  (format "Select doc (default %s): " def)
+                  (concat "Select doc"
+                          (when def (format " (default %s)" def))
+                          ": ")
                   (devdocs-browser-list-installed-slugs)
                   nil t nil nil def)))))
 
@@ -702,8 +704,9 @@ When called interactively, user can choose from the list."
           (setq rows (append new-rows rows)))))
     (let* ((selected-name
             (completing-read
-             (format "Devdocs browser [%s] (default %s): "
-                     (mapconcat #'identity slugs ",") def-name)
+             (concat (format "Devdocs browser [%s]" (mapconcat #'identity slugs ","))
+                     (when def-name (format " (default %s)" def-name))
+                     ": ")
              rows nil t nil nil def))
            (selected-row
             (assoc selected-name rows)))
