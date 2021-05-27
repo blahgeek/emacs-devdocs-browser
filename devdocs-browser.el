@@ -245,10 +245,16 @@ See https://prismjs.com/ for list of language names."
           (selected-target
            (cdr (assoc selected-row rows))))
      (list selected-target)))
-  (goto-char (point-min))
-  (let ((match (text-property-search-forward 'shr-target-id target t)))
-    (when match
-      (goto-char (prop-match-beginning match)))))
+  (let ((url-parsed (url-generic-parse-url (plist-get eww-data :url)))
+        (dom (plist-get eww-data :dom))
+        new-url)
+    (setf (url-target url-parsed) target)
+    (setq new-url (url-recreate-url url-parsed))
+    (message new-url)
+    ;; see `eww-follow-link'
+    (eww-save-history)
+    (plist-put eww-data :url new-url)
+    (eww-display-html 'utf-8 new-url dom nil (current-buffer))))
 
 (defun devdocs-browser-eww-open-in-default-browser ()
   "Open current page in devdocs.io in browser."
