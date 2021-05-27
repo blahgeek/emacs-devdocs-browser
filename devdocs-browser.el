@@ -265,6 +265,12 @@ See https://prismjs.com/ for list of language names."
               (url (concat devdocs-browser-base-url slug "/" path)))
     (browse-url-default-browser url)))
 
+(defun devdocs-browser--eww-recenter-advice (res)
+  "Recenter current cursor for devdocs buffer, used for advice :filter-return (return `RES')."
+  (when devdocs-browser--eww-data
+    (recenter))
+  res)
+
 (define-minor-mode devdocs-browser-eww-mode
   "Minor mode for browsing devdocs pages with eww."
   :lighter " Devdocs"
@@ -283,6 +289,7 @@ See https://prismjs.com/ for list of language names."
                         (h4 . devdocs-browser--eww-tag-h4)
                         (h5 . devdocs-browser--eww-tag-h5))))
   (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
+  (advice-add 'eww-display-html :filter-return #'devdocs-browser--eww-recenter-advice)
   (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t)
   (eldoc-mode))
 
@@ -640,7 +647,8 @@ When called interactively, user can choose from the list."
                       :path path
                       :base-url base-url))
 
-    (eww (url-recreate-url url))))
+    (eww (url-recreate-url url))
+    (recenter)))
 
 (defun devdocs-browser--default-active-slugs (&optional no-fallback-all)
   "Default active doc slugs for current buffer, fallback to all slugs if not NO-FALLBACK-ALL."
