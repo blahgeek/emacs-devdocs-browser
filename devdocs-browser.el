@@ -194,36 +194,52 @@ See https://prismjs.com/ for list of language names."
         (setq url (url-recreate-url url-parsed)))))
   url)
 
-(defun devdocs-browser--eww-link-eldoc (&optional _)
-  "Show URL link or description at current point."
-  (when-let* ((url (get-text-property (point) 'shr-url))
-              (url-parsed (url-generic-parse-url url)))
-    (if-let* ((base-url-parsed (url-generic-parse-url (plist-get devdocs-browser--eww-data :base-url)))
+(defun devdocs-browser--eww-parse-url-path (url)
+  "Return URL's doc :path ('hello/world#target')."
+  ;; see devdocs-browser--eww-open for url pattern
+  (when-let* ((url-parsed (url-generic-parse-url url))
               (doc (plist-get devdocs-browser--eww-data :doc))
               (slug (plist-get doc :slug))
-              (index (plist-get doc :index))
-              (entries (plist-get index :entries))
-              (path (car (split-string (url-filename url-parsed) "\\.html")))
-              (path (if (url-target url-parsed)
-                        (concat path "#" (url-target url-parsed))
-                      path))
-              (path (if (string-prefix-p (url-filename base-url-parsed) path)
-                        (substring path (length (url-filename base-url-parsed)))
-                      path))
-              (entry (seq-find
+              (filename-suffix (if (equal (url-type url-parsed) "file")
+                                   ".html"
+                                 (format ".html?%s" (plist-get doc :mtime))))
+              (filename-prefix (if (equal (url-type url-parsed) "file")
+                                   (devdocs-browser-offline-data-dir slug)
+                                 (concat "/" slug "/")))
+              (path (url-filename url-parsed)))
+    (when (and (string-prefix-p filename-prefix path)
+               (string-suffix-p filename-suffix path))
+      (concat (string-remove-suffix filename-suffix
+               (string-remove-prefix filename-prefix path))
+              "#" (url-target url-parsed)))))
+
+(defun devdocs-browser--eww-page-path ()
+  "Return current page's :path ('hello/world#target')."
+  (devdocs-browser--eww-parse-url-path (plist-get eww-data :url)))
+
+(defun devdocs-browser--eww-link-eldoc (&optional _)
+  "Show URL link or description at current point."
+  (when-let ((url (get-text-property (point) 'shr-url)))
+    (if-let ((path (devdocs-browser--eww-parse-url-path url)))
+        (let* ((doc (plist-get devdocs-browser--eww-data :doc))
+               (index (plist-get doc :index))
+               (entries (plist-get index :entries))
+               (entry (seq-find
                       (lambda (x) (equal (plist-get x :path) path))
                       entries)))
-        (concat
-         (propertize (plist-get entry :name) 'face 'font-lock-keyword-face)
-         (format " (%s):" (plist-get entry :type))
-         (propertize (format " %s" (plist-get entry :path)) 'face 'italic))
+          (concat
+           (when entry
+             (propertize (plist-get entry :name) 'face 'font-lock-keyword-face))
+           (when entry
+             (format " (%s): " (plist-get entry :type)))
+           (propertize path 'face 'italic)))
       (format "External link: %s" (propertize url 'face 'italic)))))
 
 (defun devdocs-browser--eww-page-targets ()
   "Return targets in current page, result is an alist of name and target."
   (when-let* ((doc (plist-get devdocs-browser--eww-data :doc))
               (entries (plist-get (plist-get doc :index) :entries))
-              (page-path (plist-get devdocs-browser--eww-data :path))
+              (page-path (devdocs-browser--eww-page-path))
               (page-url (url-generic-parse-url page-path)))
     (let (res)
       (mapc (lambda (entry)
@@ -261,7 +277,7 @@ See https://prismjs.com/ for list of language names."
   (interactive)
   (when-let* ((doc (plist-get devdocs-browser--eww-data :doc))
               (slug (plist-get doc :slug))
-              (path (plist-get devdocs-browser--eww-data :path))
+              (path (devdocs-browser--eww-page-path))
               (url (concat devdocs-browser-base-url slug "/" path)))
     (browse-url-default-browser url)))
 
@@ -627,6 +643,9 @@ When called interactively, user can choose from the list."
          (mtime (plist-get doc :mtime))
          base-url url)
     ;; cannot use format directly because `path' may contains #query
+    ;; path: hello/world#query
+    ;; url for offline: file:///home/path/to/devdocs/python~3.8/hello/world.html#query
+    ;; url for online:  https://documents.devdocs.io/python~3.8/hello/world.html?161818817#query
     (let ((offline-data-dir (devdocs-browser-offline-data-dir slug)))
       (if offline-data-dir
           (progn
@@ -644,7 +663,6 @@ When called interactively, user can choose from the list."
     (devdocs-browser-eww-mode)
     (setq-local devdocs-browser--eww-data
                 (list :doc doc
-                      :path path
                       :base-url base-url))
 
     (eww (url-recreate-url url))
