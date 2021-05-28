@@ -287,6 +287,15 @@ See https://prismjs.com/ for list of language names."
     (recenter))
   res)
 
+(defun devdocs-browser--eww-browse-url-new-window-advice (args)
+  "Advice around `eww-browse-url' with ARGS, set NEW-WINDOW if URL is external."
+  (let ((url (car args))
+        (new-window (cadr args)))
+    (when (and devdocs-browser--eww-data
+               (not (devdocs-browser--eww-parse-url-path url)))
+      (setq new-window t))
+    (list url new-window)))
+
 (define-minor-mode devdocs-browser-eww-mode
   "Minor mode for browsing devdocs pages with eww."
   :lighter " Devdocs"
@@ -306,6 +315,7 @@ See https://prismjs.com/ for list of language names."
                         (h5 . devdocs-browser--eww-tag-h5))))
   (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
   (advice-add 'eww-display-html :filter-return #'devdocs-browser--eww-recenter-advice)
+  (advice-add 'eww-browse-url :filter-args #'devdocs-browser--eww-browse-url-new-window-advice)
   (add-hook 'eldoc-documentation-functions #'devdocs-browser--eww-link-eldoc nil t)
   (eldoc-mode))
 
