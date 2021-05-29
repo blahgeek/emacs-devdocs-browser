@@ -268,7 +268,6 @@ See https://prismjs.com/ for list of language names."
         new-url)
     (setf (url-target url-parsed) target)
     (setq new-url (url-recreate-url url-parsed))
-    (message new-url)
     ;; see `eww-follow-link'
     (eww-save-history)
     (plist-put eww-data :url new-url)
