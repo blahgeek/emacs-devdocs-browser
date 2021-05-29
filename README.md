@@ -75,3 +75,8 @@ while `devdocs-browser-open` will use the current active docsets by default.
 
 The current active docsets are determined by current major mode
 (see `devdocs-browser-major-mode-docs-alist`), or by a buffer-local variable `devdocs-browser-active-docs`.
+
+### Commands in devdocs buffer
+
+- `devdocs-browser-eww-goto-target` (`C-c C-r`): jump to targets in current buffer
+- `devdocs-browser-eww-open-in-default-browser` (`C-c C-o`): open current page in devdocs.io using default browser
