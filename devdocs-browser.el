@@ -601,7 +601,7 @@ Result is a plist metadata, with an extra :index field at the beginning."
                         (value (cadr kv))
                         (path (expand-file-name (concat name ".html") data-dir)))
               (unless (file-exists-p (file-name-directory path))
-                (make-directory (file-name-directory path)))
+                (make-directory (file-name-directory path) t))
               (write-region value nil path)))
           (setq success t))
       (unless success
