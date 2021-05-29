@@ -209,9 +209,11 @@ See https://prismjs.com/ for list of language names."
               (path (url-filename url-parsed)))
     (when (and (string-prefix-p filename-prefix path)
                (string-suffix-p filename-suffix path))
-      (concat (string-remove-suffix filename-suffix
-               (string-remove-prefix filename-prefix path))
-              "#" (url-target url-parsed)))))
+      (setq path (string-remove-prefix filename-prefix path))
+      (setq path (string-remove-suffix filename-suffix path))
+      (when (url-target url-parsed)
+        (setq path (concat path "#" (url-target url-parsed))))
+      path)))
 
 (defun devdocs-browser--eww-page-path ()
   "Return current page's :path ('hello/world#target')."
