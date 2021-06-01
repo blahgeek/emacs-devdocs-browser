@@ -470,7 +470,7 @@ When called interactively, user can choose from the list."
         (plist-put devdocs-browser--docs-cache slug nil)))
 
 (defun devdocs-browser--upgrade-readable-name (old-doc new-doc)
-  "Get humane readable name for upgrade from OLD-DOC to NEW-DOC."
+  "Get human readable name for upgrade from OLD-DOC to NEW-DOC."
   (let ((slug (plist-get old-doc :slug))
         (name (plist-get old-doc :name))
         (old-version (plist-get old-doc :version))
