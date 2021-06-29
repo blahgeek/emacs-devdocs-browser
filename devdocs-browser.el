@@ -164,7 +164,8 @@ See https://prismjs.com/ for list of language names."
                      'bold)))
 
 (defun devdocs-browser--eww-tag-h3 (dom)
-  "Rendering function for h2 DOM."
+  "Rendering function for h2 DOM.  Maybe use it as title."
+  (devdocs-browser--eww-tag-maybe-set-title dom)
   (shr-heading dom (if shr-use-fonts
                        '(variable-pitch (:height 1.1 :weight bold))
                      'bold)))
