@@ -146,14 +146,19 @@ See https://prismjs.com/ for list of language names."
     (insert (devdocs-browser--eww-fontify-pre dom))
     (shr-ensure-newline)))
 
+(defun devdocs-browser--eww-tag-maybe-set-title (dom)
+  "Maybe set DOM as title if it's not set yet."
+  (when (zerop (length (plist-get eww-data :title)))
+    (eww-tag-title dom)))
+
 (defun devdocs-browser--eww-tag-h1 (dom)
   "Rendering function for h1 DOM.  Maybe use it as title."
-  (when (zerop (length (plist-get eww-data :title)))
-    (eww-tag-title dom))
+  (devdocs-browser--eww-tag-maybe-set-title dom)
   (shr-tag-h1 dom))
 
 (defun devdocs-browser--eww-tag-h2 (dom)
-  "Rendering function for h2 DOM."
+  "Rendering function for h2 DOM.  Maybe use it as title."
+  (devdocs-browser--eww-tag-maybe-set-title dom)
   (shr-heading dom (if shr-use-fonts
                        '(variable-pitch (:height 1.2 :weight bold))
                      'bold)))
