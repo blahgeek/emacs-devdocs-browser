@@ -54,6 +54,8 @@
 
 (defcustom devdocs-browser-major-mode-docs-alist
   '((c++-mode . ("cpp"))
+    (c-mode . ("c"))
+    (go-mode . ("go"))
     (python-mode . ("Python"))
     (emacs-lisp-mode . ("elisp")))
   "Alist of MAJOR-MODE and list of docset names.
