@@ -416,7 +416,7 @@ To upgrade docs content, see `devdocs-browser-upgrade-doc'."
       (message "Failed to install devdocs doc %s" slug))
     ;; remove cache
     (setq devdocs-browser--docs-cache
-          (plist-put devdocs-browser--docs-cache slug nil))
+          (lax-plist-put devdocs-browser--docs-cache slug nil))
     success))
 
 (defun devdocs-browser--doc-readable-name (doc)
@@ -473,7 +473,7 @@ When called interactively, user can choose from the list."
     (when (file-exists-p doc-dir)
       (delete-directory doc-dir t)))
   (setq devdocs-browser--docs-cache
-        (plist-put devdocs-browser--docs-cache slug nil)))
+        (lax-plist-put devdocs-browser--docs-cache slug nil)))
 
 (defun devdocs-browser--upgrade-readable-name (old-doc new-doc)
   "Get human readable name for upgrade from OLD-DOC to NEW-DOC."
@@ -564,7 +564,7 @@ You may need to call `devdocs-browser-update-docs' first."
 (defun devdocs-browser--load-doc (slug &optional refresh-cache)
   "Load doc identified by SLUG, reload cache if REFRESH-CACHE is not nil.
 Result is a plist metadata, with an extra :index field at the beginning."
-  (or (and (not refresh-cache) (plist-get devdocs-browser--docs-cache slug))
+  (or (and (not refresh-cache) (lax-plist-get devdocs-browser--docs-cache slug))
       (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir
                                          devdocs-browser-cache-directory))
              (doc-dir (expand-file-name slug docs-dir))
@@ -579,7 +579,7 @@ Result is a plist metadata, with an extra :index field at the beginning."
             (setq metadata (read (current-buffer))))
           (setq res (append `(:index ,index) metadata))
           (setq devdocs-browser--docs-cache
-                (plist-put devdocs-browser--docs-cache slug res)))
+                (lax-plist-put devdocs-browser--docs-cache slug res)))
         res)))
 
 (defun devdocs-browser--download-offline-data-internal (doc)
