@@ -738,7 +738,10 @@ When called interactively, user can choose from the list."
                               def-name name)))
                     (cons title (list doc path))))
                 entries)))
-          (setq rows (append new-rows rows)))))
+          (setq rows (append new-rows rows))
+          (push (cons (format "%s: INDEX PAGE" slug)
+                      (list doc "index"))
+                rows))))
     (let* ((selected-name
             (completing-read
              (concat (format "Devdocs browser [%s]" (mapconcat #'identity slugs ","))
