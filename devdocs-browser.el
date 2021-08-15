@@ -731,7 +731,9 @@ When called interactively, user can choose from the list."
                   (let* ((name (plist-get entry :name))
                          (path (plist-get entry :path))
                          (type (plist-get entry :type))
-                         (title (format "%s: %s (%s)" slug name type)))
+                         (title (concat slug ": " name " "
+                                        (propertize (format "(%s)" type)
+                                                    'face "shadow"))))
                     (when (and (null def) current-word-regex)
                       (when (string-match-p current-word-regex name)
                         (setq def title
