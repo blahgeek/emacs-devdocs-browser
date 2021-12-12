@@ -334,6 +334,48 @@ See https://prismjs.com/ for list of language names."
 (defvar devdocs-browser--offline-data-json-filename "content.json")
 (defvar devdocs-browser--offline-data-dir-name "content")
 
+(defun devdocs-browser--completing-read (prompt collections &optional def)
+  "Helper function for `completing-read'.
+PROMPT: same meaning, but this function will append ';' at the end;
+COLLECTION: alist of (name . props), where props is a plist with
+  possibly the following keys: :value, :annotation, :group;
+if :group is not nil and name starts with '<group>: ', its removed.
+DEF: same meaning;"
+  (setq collections (delq nil collections))
+  (let ((annotation-function
+         (lambda (s)
+           (let ((annotation (plist-get
+                              (cdr (assoc s collections))
+                              :annotation)))
+             (if annotation
+                 (concat " " annotation)
+               nil))))
+        (group-function
+         (lambda (s transform)
+           (let ((group (plist-get
+                         (cdr (assoc s collections))
+                         :group)))
+             (cond
+              (transform (if (and group (string-match (rx bos (literal group) ": ") s))
+                             (replace-match "" t t s)
+                           s))
+              (t group))))))
+    (setq prompt (concat prompt
+                         (when def
+                           (format " (default %s)" (funcall group-function def t)))
+                         ": "))
+    (let ((res (completing-read
+                prompt
+                (lambda (str pred action)
+                  (if (eq action 'metadata)
+                      `(metadata . ((annotation-function . ,annotation-function)
+                                    (group-function . ,group-function)))
+                    (complete-with-action action collections str pred)))
+                nil t  ;; require-match
+                nil nil def)))
+      (or (plist-get (cdr (assoc res collections)) :value)
+          res))))
+
 (defun devdocs-browser--json-parse-buffer ()
   "Same as `json-parse-buffer', with custom settings."
   (json-parse-buffer :object-type 'plist :array-type 'array))
@@ -445,18 +487,16 @@ When called interactively with prefix, or FORCE is t, reinstall existing doc."
    (let* ((force current-prefix-arg)
           (installed-docs
            (devdocs-browser-list-installed-slugs))
-          (rows
-           (mapcar (lambda (doc)
-                     (let ((slug (plist-get doc :slug)))
-                       (unless (and (not force)
-                                    (member slug installed-docs))
-                         (cons (devdocs-browser--doc-readable-name doc)
-                               slug))))
-                   (devdocs-browser-list-docs)))
-          (selected-row
-           (completing-read "Install doc: " (delq nil rows) nil t))
           (selected-slug
-           (cdr (assoc selected-row rows))))
+           (devdocs-browser--completing-read
+            "Install doc"
+            (mapcar (lambda (doc)
+                      (let ((slug (plist-get doc :slug)))
+                        (unless (and (not force)
+                                     (member slug installed-docs))
+                          (cons (devdocs-browser--doc-readable-name doc)
+                                `(:value ,slug)))))
+                    (devdocs-browser-list-docs)))))
      (list selected-slug force)))
   (let ((doc (devdocs-browser-find-doc slug-or-name)))
     (unless (and (not force)
@@ -706,18 +746,18 @@ When called interactively, user can choose from the list."
   "Open entry in specified docs SLUG-OR-NAME-LIST.
 When called interactively, user can choose from the list."
   (interactive
-   (let ((def (car (devdocs-browser--default-active-slugs t))))
-     (list (list (completing-read
-                  (concat "Select doc"
-                          (when def (format " (default %s)" def))
-                          ": ")
-                  (devdocs-browser-list-installed-slugs)
-                  nil t nil nil def)))))
+   (let ((def (devdocs-browser--default-active-slugs t)))
+     (list (completing-read-multiple
+            (concat "Select doc"
+                    (when def (format " (default %s)" def))
+                    ": ")
+            (devdocs-browser-list-installed-slugs)
+            nil t nil nil def))))
 
   (let ((current-word-regex
          (when-let ((word (thing-at-point 'word t)))
            (concat "\\<" (regexp-quote word) "\\>")))
-        slugs rows def def-name)
+        slugs rows def)
     (dolist (slug-or-name slug-or-name-list)
       (when-let* ((doc-simple (devdocs-browser-find-installed-doc slug-or-name))
                   (slug (plist-get doc-simple :slug))
@@ -731,29 +771,25 @@ When called interactively, user can choose from the list."
                   (let* ((name (plist-get entry :name))
                          (path (plist-get entry :path))
                          (type (plist-get entry :type))
-                         (title (concat slug ": " name " "
-                                        (propertize (format "(%s)" type)
-                                                    'face "shadow"))))
+                         (title (concat slug ": " name)))
                     (when (and (null def) current-word-regex)
                       (when (string-match-p current-word-regex name)
-                        (setq def title
-                              def-name name)))
-                    (cons title (list doc path))))
+                        (setq def title)))
+                    (cons title `(:value (,doc ,path)
+                                  :group ,slug
+                                  :annotation ,type))))
                 entries)))
           (setq rows (append new-rows rows))
           (push (cons (format "%s: INDEX PAGE" slug)
-                      (list doc "index"))
+                      `(:value (,doc "index")
+                        :group ,slug))
                 rows))))
-    (let* ((selected-name
-            (completing-read
-             (concat (format "Devdocs browser [%s]" (mapconcat #'identity slugs ","))
-                     (when def-name (format " (default %s)" def-name))
-                     ": ")
-             rows nil t nil nil def))
-           (selected-row
-            (assoc selected-name rows)))
-    (when selected-row
-      (apply #'devdocs-browser--eww-open (cdr selected-row))))))
+    (let* ((selected-value
+            (devdocs-browser--completing-read
+             (format "Devdocs browser [%s]" (mapconcat #'identity slugs ","))
+             rows def)))
+      (when selected-value
+        (apply #'devdocs-browser--eww-open selected-value)))))
 
 ;;;###autoload
 (defun devdocs-browser-open ()
