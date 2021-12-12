@@ -57,7 +57,8 @@
     (c-mode . ("c"))
     (go-mode . ("go"))
     (python-mode . ("Python"))
-    (emacs-lisp-mode . ("elisp")))
+    (emacs-lisp-mode . ("elisp"))
+    (cmake-mode . ("CMake")))
   "Alist of MAJOR-MODE and list of docset names.
 When calling `devdocs-browser-open', this variable will be used
 to pick a list of docsets based on the current MAJOR-MODE.
