@@ -719,8 +719,10 @@ When called interactively, user can choose from the list."
               (format "%s.html?%s" (url-filename url) mtime))))
 
     (pop-to-buffer (format "*devdocs-%s*" slug))
-    (eww-mode)
-    (devdocs-browser-eww-mode)
+    (if devdocs-browser-eww-mode
+        (eww-save-history)
+      (eww-mode)
+      (devdocs-browser-eww-mode))
     (setq-local devdocs-browser--eww-data
                 (list :doc doc
                       :base-url base-url))
