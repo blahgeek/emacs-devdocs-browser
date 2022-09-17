@@ -31,6 +31,7 @@
 (require 'shr)
 (require 'eww)
 (require 'eldoc)
+(require 'imenu)
 
 
 (defgroup devdocs-browser nil
@@ -246,41 +247,33 @@ See https://prismjs.com/ for list of language names."
            (propertize path 'face 'italic)))
       (format "External link: %s" (propertize url 'face 'italic)))))
 
-(defun devdocs-browser--eww-page-targets ()
-  "Return targets in current page, result is an alist of name and target."
+(defun devdocs-browser--position-by-target (target)
+  "Find buffer position for TARGET (url hash)."
+  (save-excursion
+    (goto-char (point-min))
+    (when-let ((match (text-property-search-forward 'shr-target-id target #'member)))
+      (prop-match-beginning match))))
+
+(defun devdocs-browser--imenu-create-index ()
+  "Create index alist for current buffer for imenu.
+Can be used as `imenu-create-index-function'."
   (when-let* ((doc (plist-get devdocs-browser--eww-data :doc))
               (entries (plist-get (plist-get doc :index) :entries))
               (page-path (devdocs-browser--eww-page-path))
               (page-url (url-generic-parse-url page-path)))
-    (let (res)
-      (mapc (lambda (entry)
-              (when-let* ((name (plist-get entry :name))
-                          (path (plist-get entry :path))
-                          (url (url-generic-parse-url path))
-                          (target (url-target url)))
-                (when (equal (url-filename url) (url-filename page-url))
-                  (setq res (push (cons name target) res)))))
-            entries)
-      res)))
+    (seq-filter
+     #'identity
+     (mapcar
+      (lambda (entry)
+        (when-let* ((name (plist-get entry :name))
+                    (path (plist-get entry :path))
+                    (url (url-generic-parse-url path))
+                    (target (url-target url))
+                    (_ (equal (url-filename url) (url-filename page-url))))
+          (cons name (devdocs-browser--position-by-target target))))
+      entries))))
 
-(defun devdocs-browser-eww-goto-target (target)
-  "Goto TARGET in current devdocs eww page."
-  (interactive
-   (let* ((rows (devdocs-browser--eww-page-targets))
-          (selected-row
-           (completing-read "Goto target: " rows nil t))
-          (selected-target
-           (cdr (assoc selected-row rows))))
-     (list selected-target)))
-  (let ((url-parsed (url-generic-parse-url (plist-get eww-data :url)))
-        (dom (plist-get eww-data :dom))
-        new-url)
-    (setf (url-target url-parsed) target)
-    (setq new-url (url-recreate-url url-parsed))
-    ;; see `eww-follow-link'
-    (eww-save-history)
-    (plist-put eww-data :url new-url)
-    (eww-display-html 'utf-8 new-url dom nil (current-buffer))))
+(define-obsolete-function-alias 'devdocs-browser-eww-goto-target 'imenu "20220917")
 
 (defun devdocs-browser-eww-open-in-default-browser ()
   "Open current page in devdocs.io in browser."
@@ -312,7 +305,6 @@ See https://prismjs.com/ for list of language names."
   :interactive nil
   :group 'devdocs-browser
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-r") #'devdocs-browser-eww-goto-target)
             (define-key map (kbd "C-c C-o") #'devdocs-browser-eww-open-in-default-browser)
             map)
   (setq-local shr-external-rendering-functions
@@ -323,6 +315,8 @@ See https://prismjs.com/ for list of language names."
                         (h3 . devdocs-browser--eww-tag-h3)
                         (h4 . devdocs-browser--eww-tag-h4)
                         (h5 . devdocs-browser--eww-tag-h5))))
+  (setq-local imenu-create-index-function
+              #'devdocs-browser--imenu-create-index)
   (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
   (advice-add 'eww-display-html :filter-return #'devdocs-browser--eww-recenter-advice)
   (advice-add 'eww-browse-url :filter-args #'devdocs-browser--eww-browse-url-new-window-advice)
