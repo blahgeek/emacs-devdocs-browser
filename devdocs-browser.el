@@ -59,6 +59,7 @@
     (go-mode . ("go"))
     (python-mode . ("Python"))
     (emacs-lisp-mode . ("elisp"))
+    (rust-mode . ("rust"))
     (cmake-mode . ("CMake")))
   "Alist of MAJOR-MODE and list of docset names.
 When calling `devdocs-browser-open', this variable will be used
@@ -117,6 +118,7 @@ See https://prismjs.com/ for list of language names."
     ("python" . python-mode)
     ("py" . python-mode)
     ("ruby" . ruby-mode)
+    ("rust" . rust-mode)
     ("rb" . ruby-mode)
     ("sql" . sql-mode)
     ("typescript" . typescript-mode))
