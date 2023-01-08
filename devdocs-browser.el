@@ -331,32 +331,31 @@ Can be used as `imenu-create-index-function'."
 (defvar devdocs-browser--offline-data-json-filename "content.json")
 (defvar devdocs-browser--offline-data-dir-name "content")
 
-(defun devdocs-browser--completing-read (prompt collections &optional def)
+(defun devdocs-browser--completing-read (prompt collection &optional def)
   "Helper function for `completing-read'.
 PROMPT: same meaning, but this function will append ';' at the end;
 COLLECTION: alist of (name . props), where props is a plist with
   possibly the following keys: :value, :annotation, :group;
 if :group is not nil and name starts with '<group>: ', its removed.
 DEF: same meaning;"
-  (setq collections (delq nil collections))
-  (let ((annotation-function
-         (lambda (s)
-           (let ((annotation (plist-get
-                              (cdr (assoc s collections))
-                              :annotation)))
-             (if annotation
-                 (concat " " annotation)
-               nil))))
-        (group-function
-         (lambda (s transform)
-           (let ((group (plist-get
-                         (cdr (assoc s collections))
-                         :group)))
-             (cond
-              (transform (if (and group (string-match (rx bos (literal group) ": ") s))
-                             (replace-match "" t t s)
-                           s))
-              (t group))))))
+  ;; convert collection to hashtables for faster completion. `complete-with-action' also supports that.
+  (let* ((collection-ht (make-hash-table :test 'equal :size (length collection)))
+         (annotation-function
+          (lambda (s)
+            (let ((annotation (plist-get (gethash s collection-ht) :annotation)))
+              (if annotation
+                  (concat " " annotation)
+                nil))))
+         (group-function
+          (lambda (s transform)
+            (let ((group (plist-get (gethash s collection-ht) :group)))
+              (cond
+               (transform (if (and group (string-match (rx bos (literal group) ": ") s))
+                              (replace-match "" t t s)
+                            s))
+               (t group))))))
+    (mapc (lambda (elem) (when elem (puthash (car elem) (cdr elem) collection-ht)))
+          collection)
     (setq prompt (concat prompt
                          (when def
                            (format " (default %s)" (funcall group-function def t)))
@@ -367,10 +366,10 @@ DEF: same meaning;"
                   (if (eq action 'metadata)
                       `(metadata . ((annotation-function . ,annotation-function)
                                     (group-function . ,group-function)))
-                    (complete-with-action action collections str pred)))
+                    (complete-with-action action collection-ht str pred)))
                 nil t  ;; require-match
                 nil nil def)))
-      (or (plist-get (cdr (assoc res collections)) :value)
+      (or (plist-get (gethash res collection-ht) :value)
           res))))
 
 (defun devdocs-browser--json-parse-buffer ()
