@@ -339,6 +339,7 @@ COLLECTION: alist of (name . props), where props is a plist with
 if :group is not nil and name starts with '<group>: ', its removed.
 DEF: same meaning;"
   ;; convert collection to hashtables for faster completion. `complete-with-action' also supports that.
+  (setq collection (delq nil collection))
   (let* ((collection-ht (make-hash-table :test 'equal :size (length collection)))
          (annotation-function
           (lambda (s)
@@ -354,7 +355,7 @@ DEF: same meaning;"
                               (replace-match "" t t s)
                             s))
                (t group))))))
-    (mapc (lambda (elem) (when elem (puthash (car elem) (cdr elem) collection-ht)))
+    (mapc (lambda (elem) (puthash (car elem) (cdr elem) collection-ht))
           collection)
     (setq prompt (concat prompt
                          (when def
@@ -366,7 +367,7 @@ DEF: same meaning;"
                   (if (eq action 'metadata)
                       `(metadata . ((annotation-function . ,annotation-function)
                                     (group-function . ,group-function)))
-                    (complete-with-action action collection-ht str pred)))
+                    (complete-with-action action collection str pred)))
                 nil t  ;; require-match
                 nil nil def)))
       (or (plist-get (gethash res collection-ht) :value)
