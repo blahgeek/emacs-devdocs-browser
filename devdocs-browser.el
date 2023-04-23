@@ -319,6 +319,8 @@ Can be used as `imenu-create-index-function'."
                         (h5 . devdocs-browser--eww-tag-h5))))
   (setq-local imenu-create-index-function
               #'devdocs-browser--imenu-create-index)
+  (when (boundp 'eww-auto-rename-buffer)
+    (setq-local eww-auto-rename-buffer nil))
   (advice-add 'shr-expand-url :filter-return #'devdocs-browser--eww-fix-url)
   (advice-add 'eww-display-html :filter-return #'devdocs-browser--eww-recenter-advice)
   (advice-add 'eww-browse-url :filter-args #'devdocs-browser--eww-browse-url-new-window-advice)
