@@ -125,6 +125,11 @@ See https://prismjs.com/ for list of language names."
   "Default value for `devdocs-browser-highlight-lang-mode-alist'.")
 
 
+(defun devdocs-browser--clear-dom-id-attr (dom)
+  "Clear id attribute for DOM and its children."
+  (dom-remove-attribute dom 'id)
+  (mapc #'devdocs-browser--clear-dom-id-attr (dom-non-text-children dom)))
+
 (defun devdocs-browser--eww-fontify-pre (dom)
   "Return fontified string for pre DOM."
   (with-temp-buffer
@@ -146,6 +151,9 @@ See https://prismjs.com/ for list of language names."
 
 (defun devdocs-browser--eww-tag-pre (dom)
   "Rendering function for pre DOM."
+  ;; must clear all 'id' attributes in dom.
+  ;; otherwise, shr would try to add text properties based on it, but since they are rendered in temp-buffer, the marker would be invalid
+  (devdocs-browser--clear-dom-id-attr dom)
   (let ((shr-folding-mode 'none)
         (shr-current-font 'default))
     (shr-ensure-newline)
