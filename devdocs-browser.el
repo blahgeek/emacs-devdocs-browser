@@ -192,6 +192,11 @@ See https://prismjs.com/ for list of language names."
   "Rendering function for h5 DOM."
   (shr-heading dom 'italic))
 
+(defun devdocs-browser--eww-tag-generic-ensure-paragraph (dom)
+  "Rendering function for generic DOM while ensuring paragraph."
+  (shr-ensure-paragraph)
+  (shr-generic dom))
+
 (defvar-local devdocs-browser--eww-data '()
   "Plist data for current eww page, contain :doc and :path.")
 
@@ -324,7 +329,9 @@ Can be used as `imenu-create-index-function'."
                         (h2 . devdocs-browser--eww-tag-h2)
                         (h3 . devdocs-browser--eww-tag-h3)
                         (h4 . devdocs-browser--eww-tag-h4)
-                        (h5 . devdocs-browser--eww-tag-h5))))
+                        (h5 . devdocs-browser--eww-tag-h5)
+                        (summary . devdocs-browser--eww-tag-generic-ensure-paragraph)
+                        (section . devdocs-browser--eww-tag-generic-ensure-paragraph))))
   (setq-local imenu-create-index-function
               #'devdocs-browser--imenu-create-index)
   (when (boundp 'eww-auto-rename-buffer)
