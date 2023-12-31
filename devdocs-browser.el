@@ -425,7 +425,7 @@ BASE-URL defaults to `devdocs-browser-base-url'."
             (devdocs-browser--fetch-json "docs.json" "docs.json"))))
 
 ;;;###autoload
-(defun devdocs-browser-update-docs ()
+(defun devdocs-browser-update-metadata ()
   "Update doc metadata list.
 To upgrade docs content, see `devdocs-browser-upgrade-doc'."
   (interactive)
@@ -434,6 +434,10 @@ To upgrade docs content, see `devdocs-browser-upgrade-doc'."
                      "You may want to run `devdocs-browser-install-doc' "
                      "or `devdocs-browser-upgrade-doc'.")
              count)))
+
+;;;###autoload
+(defalias 'devdocs-browser-update-docs 'devdocs-browser-update-metadata)
+(make-obsolete 'devdocs-browser-update-docs 'devdocs-browser-update-metadata "20231231")
 
 (defun devdocs-browser-find-doc (slug-or-name)
   "Find doc from docs list by SLUG-OR-NAME."
