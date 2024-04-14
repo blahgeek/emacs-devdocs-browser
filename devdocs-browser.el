@@ -39,11 +39,13 @@
   :group 'tools
   :group 'web)
 
-(defcustom devdocs-browser-cache-directory
+(defcustom devdocs-browser-data-directory
   (expand-file-name "devdocs-browser" user-emacs-directory)
-  "Directory to store devdocs cache files."
+  "Directory to store devdocs data files."
   :type 'directory
   :group 'devdocs-browser)
+
+(defalias 'devdocs-browser-cache-directory 'devdocs-browser-data-directory)
 
 (defcustom devdocs-browser-base-url "https://devdocs.io/"
   "Base URL to fetch json metadata files."
@@ -396,7 +398,7 @@ DEF: same meaning;"
 
 (defun devdocs-browser--read-json (file-path)
   "Read json file in FILE-PATH, if it's a relative path, find it in cache dir."
-  (let ((filename (expand-file-name file-path devdocs-browser-cache-directory)))
+  (let ((filename (expand-file-name file-path devdocs-browser-data-directory)))
     (when (file-exists-p filename)
       (with-temp-buffer
         (insert-file-contents filename)
@@ -405,7 +407,7 @@ DEF: same meaning;"
 (defun devdocs-browser--fetch-json (url-path file-path &optional base-url)
   "Fetch json from BASE-URL / URL-PATH, also save to FILE-PATH.
 BASE-URL defaults to `devdocs-browser-base-url'."
-  (let ((cache-filename (expand-file-name file-path devdocs-browser-cache-directory)))
+  (let ((cache-filename (expand-file-name file-path devdocs-browser-data-directory)))
       (unless (file-exists-p (file-name-directory cache-filename))
         (make-directory (file-name-directory cache-filename) t))
       (with-temp-file cache-filename
@@ -447,13 +449,18 @@ To upgrade docs content, see `devdocs-browser-upgrade-doc'."
                     (equal (plist-get doc :name) slug-or-name)))
               docs-list)))
 
-(defvar devdocs-browser--docs-cache '() "Cached doc indexes plist.")
+(defcustom devdocs-browser-enable-cache t
+  "Whether cache doc indices in memory."
+  :type 'boolean
+  :group 'devdocs-browser)
+
+(defvar devdocs-browser--docs-cache '() "Cached doc indices plist.")
 
 (defun devdocs-browser--install-doc-internal (doc)
   "(Re-)install doc identified by plist DOC.  Return t if success."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
-         (docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory))
+         (docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-data-directory))
          (doc-dir (expand-file-name slug docs-dir))
          success)
     (unless (file-exists-p docs-dir)
@@ -528,7 +535,7 @@ When called interactively, user can choose from the list."
   (interactive (list (completing-read "Uninstall doc: "
                                       (devdocs-browser-list-installed-slugs)
                                       nil t)))
-  (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory))
+  (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-data-directory))
          (doc-dir (expand-file-name slug docs-dir)))
     (when (file-exists-p doc-dir)
       (delete-directory doc-dir t)))
@@ -602,7 +609,7 @@ You may need to call `devdocs-browser-update-docs' first."
 
 (defun devdocs-browser-list-installed-slugs ()
   "Get a list of installed docs' slug name."
-  (let ((dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory)))
+  (let ((dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-data-directory)))
     (when (file-exists-p dir)
       (directory-files dir nil
                        ;; ignore ".", ".." and hidden files
@@ -626,7 +633,7 @@ You may need to call `devdocs-browser-update-docs' first."
 Result is a plist metadata, with an extra :index field at the beginning."
   (or (and (not refresh-cache) (lax-plist-get devdocs-browser--docs-cache slug))
       (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir
-                                         devdocs-browser-cache-directory))
+                                         devdocs-browser-data-directory))
              (doc-dir (expand-file-name slug docs-dir))
              (metadata-filename (expand-file-name devdocs-browser--metadata-filename doc-dir))
              (metadata nil)
@@ -638,15 +645,16 @@ Result is a plist metadata, with an extra :index field at the beginning."
             (insert-file-contents metadata-filename)
             (setq metadata (read (current-buffer))))
           (setq res (append `(:index ,index) metadata))
-          (setq devdocs-browser--docs-cache
-                (lax-plist-put devdocs-browser--docs-cache slug res)))
+          (when devdocs-browser-enable-cache
+            (setq devdocs-browser--docs-cache
+                  (lax-plist-put devdocs-browser--docs-cache slug res))))
         res)))
 
 (defun devdocs-browser--download-offline-data-internal (doc)
   "(re-)Download and extract offline data for DOC."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
-         (docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory))
+         (docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-data-directory))
          (doc-dir (expand-file-name slug docs-dir))
          (data-dir (expand-file-name devdocs-browser--offline-data-dir-name doc-dir))
          success)
@@ -682,7 +690,7 @@ Result is a plist metadata, with an extra :index field at the beginning."
 
 (defun devdocs-browser-offline-data-dir (slug)
   "Return doc SLUG's offline data dir if present, return nil otherwise."
-  (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-cache-directory))
+  (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir devdocs-browser-data-directory))
          (doc-dir (expand-file-name slug docs-dir))
          (data-dir (expand-file-name devdocs-browser--offline-data-dir-name doc-dir)))
     (when (file-exists-p data-dir)
