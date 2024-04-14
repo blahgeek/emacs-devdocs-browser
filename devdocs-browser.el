@@ -32,6 +32,7 @@
 (require 'eww)
 (require 'eldoc)
 (require 'imenu)
+(require 'seq)
 
 
 (defgroup devdocs-browser nil
@@ -353,13 +354,12 @@ Can be used as `imenu-create-index-function'."
 (defun devdocs-browser--completing-read (prompt collection &optional def)
   "Helper function for `completing-read'.
 PROMPT: same meaning, but this function will append ';' at the end;
-COLLECTION: alist of (name . props), where props is a plist with
+COLLECTION: alist or hashtable of (name . props), where props is a plist with
   possibly the following keys: :value, :annotation, :group;
 if :group is not nil and name starts with '<group>: ', its removed.
 DEF: same meaning;"
   ;; convert collection to hashtables for faster completion. `complete-with-action' also supports that.
-  (setq collection (delq nil collection))
-  (let* ((collection-ht (make-hash-table :test 'equal :size (length collection)))
+  (let* (collection-ht
          (annotation-function
           (lambda (s)
             (let ((annotation (plist-get (gethash s collection-ht) :annotation)))
@@ -374,8 +374,13 @@ DEF: same meaning;"
                               (replace-match "" t t s)
                             s))
                (t group))))))
-    (mapc (lambda (elem) (puthash (car elem) (cdr elem) collection-ht))
-          collection)
+    (if (hash-table-p collection)
+        (setq collection-ht collection)
+      (setq collection-ht (make-hash-table :test 'equal :size (length collection)))
+      (mapc (lambda (elem)
+              (when elem
+                (puthash (car elem) (cdr elem) collection-ht)))
+            collection))
     (setq prompt (concat prompt
                          (when def
                            (format " (default %s)" (funcall group-function def t)))
@@ -386,7 +391,7 @@ DEF: same meaning;"
                   (if (eq action 'metadata)
                       `(metadata . ((annotation-function . ,annotation-function)
                                     (group-function . ,group-function)))
-                    (complete-with-action action collection str pred)))
+                    (complete-with-action action collection-ht str pred)))
                 nil t  ;; require-match
                 nil nil def)))
       (or (plist-get (gethash res collection-ht) :value)
@@ -786,7 +791,8 @@ When called interactively, user can choose from the list."
   (let ((current-word-regex
          (when-let ((word (thing-at-point 'word t)))
            (concat "\\<" (regexp-quote word) "\\>")))
-        slugs rows def)
+        (rows (make-hash-table :test 'equal))
+        slugs def)
     (dolist (slug-or-name slug-or-name-list)
       (when-let* ((doc-simple (devdocs-browser-find-installed-doc slug-or-name))
                   (slug (plist-get doc-simple :slug))
@@ -794,25 +800,22 @@ When called interactively, user can choose from the list."
                   (index (plist-get doc :index))
                   (entries (plist-get index :entries)))
         (setq slugs (push slug slugs))
-        (let ((new-rows
-               (mapcar
-                (lambda (entry)
-                  (let* ((name (plist-get entry :name))
-                         (path (plist-get entry :path))
-                         (type (plist-get entry :type))
-                         (title (concat slug ": " name)))
-                    (when (and (null def) current-word-regex)
-                      (when (string-match-p current-word-regex name)
-                        (setq def title)))
-                    (cons title `(:value (,doc ,path)
-                                  :group ,slug
-                                  :annotation ,type))))
-                entries)))
-          (setq rows (append new-rows rows))
-          (push (cons (format "%s: INDEX PAGE" slug)
-                      `(:value (,doc "index")
-                        :group ,slug))
-                rows))))
+        (puthash (format "%s: INDEX PAGE" slug)
+                 `(:value (,doc "index")
+                          :group ,slug)
+                 rows)
+        (seq-doseq (entry entries)
+          (let* ((name (plist-get entry :name))
+                 (path (plist-get entry :path))
+                 (type (plist-get entry :type))
+                 (title (concat slug ": " name)))
+            (when (and (null def) current-word-regex)
+              (when (string-match-p current-word-regex name)
+                (setq def title)))
+            (puthash title `(:value (,doc ,path)
+                                    :group ,slug
+                                    :annotation ,type)
+                     rows)))))
     (let* ((selected-value
             (devdocs-browser--completing-read
              (format "Devdocs browser [%s]" (mapconcat #'identity slugs ","))
