@@ -823,6 +823,12 @@ When called interactively, user can choose from the list."
       (when selected-value
         (apply #'devdocs-browser--eww-open selected-value)))))
 
+
+(defcustom devdocs-browser-open-fallback-to-all-docs t
+  "When not sure which docs to use, whether `devdocs-browser-open' should use all installed docs, or just ask the user to pick one (like `devdocs-browser-open-in')."
+  :type 'boolean
+  :group 'devdocs-browser)
+
 ;;;###autoload
 (defun devdocs-browser-open ()
   "Open entry in active docs.
@@ -831,7 +837,12 @@ or `devdocs-browser-major-mode-docs-alist',
 or the current doc type if called in a devdocs eww buffer.
 When all of them are nil, all installed docs are used."
   (interactive)
-  (devdocs-browser-open-in (devdocs-browser--default-active-slugs)))
+  (if devdocs-browser-open-fallback-to-all-docs
+      (devdocs-browser-open-in (devdocs-browser--default-active-slugs))
+    (let ((slugs (devdocs-browser--default-active-slugs 'no-fallback-all)))
+      (if slugs
+          (devdocs-browser-open-in slugs)
+        (call-interactively 'devdocs-browser-open-in)))))
 
 
 (provide 'devdocs-browser)
