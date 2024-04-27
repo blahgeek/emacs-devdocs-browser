@@ -176,16 +176,16 @@ See https://prismjs.com/ for list of language names."
 (defun devdocs-browser--eww-tag-h2 (dom)
   "Rendering function for h2 DOM.  Maybe use it as title."
   (devdocs-browser--eww-tag-maybe-set-title dom)
-  (shr-heading dom (if shr-use-fonts
-                       '(variable-pitch (:height 1.2 :weight bold))
-                     'bold)))
+  (apply #'shr-heading dom (if shr-use-fonts
+                               '(variable-pitch 1.2 bold)
+                             '(bold))))
 
 (defun devdocs-browser--eww-tag-h3 (dom)
   "Rendering function for h2 DOM.  Maybe use it as title."
   (devdocs-browser--eww-tag-maybe-set-title dom)
-  (shr-heading dom (if shr-use-fonts
-                       '(variable-pitch (:height 1.1 :weight bold))
-                     'bold)))
+  (apply #'shr-heading dom (if shr-use-fonts
+                               '(variable-pitch 1.1 bold)
+                             '(bold))))
 
 (defun devdocs-browser--eww-tag-h4 (dom)
   "Rendering function for h4 DOM."
