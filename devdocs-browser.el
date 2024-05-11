@@ -40,6 +40,32 @@
   :group 'tools
   :group 'web)
 
+
+;; Following are faces for <h1> to <h5> elements.
+;; We do not reuse `shr-h1' etc. face because:
+;; - they are only available since emacs 28
+;; - devdocs documents usually have lower level of headings (e.g. H2 and H3 is more common), so we want different rules as the general version
+
+(defface devdocs-browser-h1
+  '((t :height 1.3 :weight bold))
+  "Face for <h1> elements for devdocs-browser.")
+
+(defface devdocs-browser-h2
+  '((t :height 1.2 :weight bold))
+  "Face for <h2> elements for devdocs-browser.")
+
+(defface devdocs-browser-h3
+  '((t :height 1.1 :weight bold))
+  "Face for <h3> elements for devdocs-browser.")
+
+(defface devdocs-browser-h4
+  '((t :weight bold))
+  "Face for <h4> elements for devdocs-browser.")
+
+(defface devdocs-browser-h5
+  '((t :slant italic))
+  "Face for <h5> elements for devdocs-browser.")
+
 (defcustom devdocs-browser-data-directory
   (expand-file-name "devdocs-browser" user-emacs-directory)
   "Directory to store devdocs data files."
@@ -163,37 +189,20 @@ See https://prismjs.com/ for list of language names."
     (insert (devdocs-browser--eww-fontify-pre dom))
     (shr-ensure-newline)))
 
-(defun devdocs-browser--eww-tag-maybe-set-title (dom)
-  "Maybe set DOM as title if it's not set yet."
-  (when (zerop (length (plist-get eww-data :title)))
-    (eww-tag-title dom)))
+(defun devdocs-browser--eww-tag-header (level dom)
+  "Render function for header DOM with LEVEL (number)."
+  ;; use h1/h2/h3 as title if not set yet
+  (when (and (<= level 3)
+             (zerop (length (plist-get eww-data :title))))
+    (eww-tag-title dom))
 
-(defun devdocs-browser--eww-tag-h1 (dom)
-  "Rendering function for h1 DOM.  Maybe use it as title."
-  (devdocs-browser--eww-tag-maybe-set-title dom)
-  (shr-tag-h1 dom))
-
-(defun devdocs-browser--eww-tag-h2 (dom)
-  "Rendering function for h2 DOM.  Maybe use it as title."
-  (devdocs-browser--eww-tag-maybe-set-title dom)
-  (apply #'shr-heading dom (if shr-use-fonts
-                               '(variable-pitch 1.2 bold)
-                             '(bold))))
-
-(defun devdocs-browser--eww-tag-h3 (dom)
-  "Rendering function for h2 DOM.  Maybe use it as title."
-  (devdocs-browser--eww-tag-maybe-set-title dom)
-  (apply #'shr-heading dom (if shr-use-fonts
-                               '(variable-pitch 1.1 bold)
-                             '(bold))))
-
-(defun devdocs-browser--eww-tag-h4 (dom)
-  "Rendering function for h4 DOM."
-  (shr-heading dom 'bold))
-
-(defun devdocs-browser--eww-tag-h5 (dom)
-  "Rendering function for h5 DOM."
-  (shr-heading dom 'italic))
+  ;; similar to shr-heading
+  (shr-ensure-paragraph)
+  (let ((start (point)))
+    (shr-fontize-dom dom (intern (concat "devdocs-browser-h" (number-to-string level))))
+    ;; this is new since emacs 30, to support outline function
+    (put-text-property start (pos-eol) 'outline-level level))
+  (shr-ensure-paragraph))
 
 (defun devdocs-browser--eww-tag-generic-ensure-paragraph (dom)
   "Rendering function for generic DOM while ensuring paragraph."
@@ -328,13 +337,12 @@ Can be used as `imenu-create-index-function'."
   (setq-local shr-external-rendering-functions
               (append shr-external-rendering-functions
                       '((pre . devdocs-browser--eww-tag-pre)
-                        (h1 . devdocs-browser--eww-tag-h1)
-                        (h2 . devdocs-browser--eww-tag-h2)
-                        (h3 . devdocs-browser--eww-tag-h3)
-                        (h4 . devdocs-browser--eww-tag-h4)
-                        (h5 . devdocs-browser--eww-tag-h5)
                         (summary . devdocs-browser--eww-tag-generic-ensure-paragraph)
-                        (section . devdocs-browser--eww-tag-generic-ensure-paragraph))))
+                        (section . devdocs-browser--eww-tag-generic-ensure-paragraph))
+                      (mapcar (lambda (level)
+                                (cons (intern (concat "h" (number-to-string level)))
+                                      (apply-partially #'devdocs-browser--eww-tag-header level)))
+                              (number-sequence 1 5))))
   (setq-local imenu-create-index-function
               #'devdocs-browser--imenu-create-index)
   (when (boundp 'eww-auto-rename-buffer)
