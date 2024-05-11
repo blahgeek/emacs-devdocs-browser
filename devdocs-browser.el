@@ -296,7 +296,7 @@ Can be used as `imenu-create-index-function'."
                     (path (plist-get entry :path))
                     (url (url-generic-parse-url path))
                     (target (url-target url))
-                    (_ (equal (url-filename url) (url-filename page-url))))
+                    ((equal (url-filename url) (url-filename page-url))))
           (cons name (devdocs-browser--position-by-target target))))
       entries))))
 
@@ -498,7 +498,7 @@ To upgrade docs content, see `devdocs-browser-upgrade-doc'."
       (message "Failed to install devdocs doc %s" slug))
     ;; remove cache
     (setq devdocs-browser--docs-cache
-          (lax-plist-put devdocs-browser--docs-cache slug nil))
+          (plist-put devdocs-browser--docs-cache slug nil #'equal))
     success))
 
 (defun devdocs-browser--doc-readable-name (doc)
@@ -553,7 +553,7 @@ When called interactively, user can choose from the list."
     (when (file-exists-p doc-dir)
       (delete-directory doc-dir t)))
   (setq devdocs-browser--docs-cache
-        (lax-plist-put devdocs-browser--docs-cache slug nil)))
+        (plist-put devdocs-browser--docs-cache slug nil #'equal)))
 
 (defun devdocs-browser--upgrade-readable-name (old-doc new-doc)
   "Get human readable name for upgrade from OLD-DOC to NEW-DOC."
@@ -644,7 +644,7 @@ You may need to call `devdocs-browser-update-docs' first."
 (defun devdocs-browser--load-doc (slug &optional refresh-cache)
   "Load doc identified by SLUG, reload cache if REFRESH-CACHE is not nil.
 Result is a plist metadata, with an extra :index field at the beginning."
-  (or (and (not refresh-cache) (lax-plist-get devdocs-browser--docs-cache slug))
+  (or (and (not refresh-cache) (plist-get devdocs-browser--docs-cache slug #'equal))
       (let* ((docs-dir (expand-file-name devdocs-browser--docs-dir
                                          devdocs-browser-data-directory))
              (doc-dir (expand-file-name slug docs-dir))
@@ -660,7 +660,7 @@ Result is a plist metadata, with an extra :index field at the beginning."
           (setq res (append `(:index ,index) metadata))
           (when devdocs-browser-enable-cache
             (setq devdocs-browser--docs-cache
-                  (lax-plist-put devdocs-browser--docs-cache slug res))))
+                  (plist-put devdocs-browser--docs-cache slug res #'equal))))
         res)))
 
 (defun devdocs-browser--download-offline-data-internal (doc)
