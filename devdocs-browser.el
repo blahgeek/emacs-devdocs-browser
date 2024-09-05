@@ -684,7 +684,7 @@ Result is a plist metadata, with an extra :index field at the beginning."
                      devdocs-browser-doc-base-url)))
           ;; write data to files
           (dolist (kv (seq-partition data 2))
-            (when-let* ((name (substring (symbol-name (car kv)) 1))
+            (when-let* ((name (convert-standard-filename (substring (symbol-name (car kv)) 1)))
                         (value (cadr kv))
                         ;; prepent "./" to fix paths starting with literal "~" (e.g. deno)
                         (path (expand-file-name (concat "./" name ".html") data-dir)))
@@ -749,7 +749,12 @@ When called interactively, user can choose from the list."
       (if offline-data-dir
           (progn
             (setq base-url (concat "file://" offline-data-dir))
-            (setq url (url-generic-parse-url (concat "file://" offline-data-dir path)))
+            (setq url (url-generic-parse-url
+                       (concat "file://"
+                               (when (memq system-type '(windows-nt ms-dos))
+                                 "/")
+                               offline-data-dir
+                               (convert-standard-filename path))))
             (setf (url-filename url) (concat (url-filename url) ".html")))
         (setq base-url (concat devdocs-browser-doc-base-url slug "/"))
         (setq url (url-generic-parse-url
