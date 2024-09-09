@@ -737,40 +737,39 @@ When called interactively, user can choose from the list."
   (when-let* ((data-dir (devdocs-browser-offline-data-dir slug)))
     (delete-directory data-dir t)))
 
-(defun devdocs-browser--eww-open (doc path)
-  "Open PATH for document DOC using eww."
+(defun devdocs-browser--eww-open (doc url-path)
+  "Open URL-PATH for document DOC using eww."
   (let* ((slug (plist-get doc :slug))
          (mtime (plist-get doc :mtime))
-         base-url url)
-    ;; cannot use format directly because `path' may contains #query
-    ;; path: hello/world#query
+         (path-and-query (string-split url-path "#"))
+         (path (car path-and-query))
+         (query (cadr path-and-query))
+         url)
+    ;; url-path: hello/world#query
     ;; url for offline: file:///home/path/to/devdocs/python~3.8/hello/world.html#query
     ;; url for online:  https://documents.devdocs.io/python~3.8/hello/world.html?161818817#query
     (let ((offline-data-dir (devdocs-browser-offline-data-dir slug)))
       (if offline-data-dir
-          (progn
-            (setq base-url (concat "file://"
-                                   (and (memq system-type '(windows-nt ms-dos))
-                                        "/")
-                                   offline-data-dir))
-            (setq url (url-generic-parse-url (concat base-url path)))
-            (setf (url-filename url)
-                  (convert-standard-filename (concat (url-filename url) ".html"))))
-        (setq base-url (concat devdocs-browser-doc-base-url slug "/"))
-        (setq url (url-generic-parse-url (concat base-url path)))
-        (setf (url-filename url)
-              (format "%s.html?%s" (url-filename url) mtime))))
-
+          (setq url (concat "file://"
+                            (when (memq system-type '(windows-nt ms-dos))
+                              "/")
+                            (convert-standard-filename
+                             (expand-file-name (concat "./" path ".html") offline-data-dir))
+                            (when query
+                              (concat "#" query))))
+        (setq url (concat devdocs-browser-doc-base-url slug "/"
+                          path
+                          (format ".html?%s" mtime)
+                          (when query
+                            (concat "#" query))))))
     (pop-to-buffer (format "*devdocs-%s*" slug))
     (if devdocs-browser-eww-mode
         (eww-save-history)
       (eww-mode)
       (devdocs-browser-eww-mode))
     (setq-local devdocs-browser--eww-data
-                (list :doc doc
-                      :base-url base-url))
-
-    (eww (url-recreate-url url))
+                (list :doc doc))
+    (eww url)
     (recenter)))
 
 (defun devdocs-browser--default-active-slugs (&optional no-fallback-all)
