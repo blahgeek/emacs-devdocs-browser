@@ -107,6 +107,8 @@ If this var is set to non-nil,
 it have higher priority than `devdocs-browser-major-mode-docs-alist'.
 See `devdocs-browser-major-mode-docs-alist' for the meaning of NAME.")
 
+(put 'devdocs-browser-active-docs 'safe-local-variable #'listp)
+
 (defcustom devdocs-browser-highlight-lang-mode-alist '()
   "Alist of language name and MAJOR-MODE, to highlight HTML pre blocks.
 If language is not found in this alist,
