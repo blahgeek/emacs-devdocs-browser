@@ -499,8 +499,9 @@ To upgrade docs content, see `devdocs-browser-upgrade-doc'."
     (unwind-protect
         (progn
           (devdocs-browser--fetch-json
-           (format "docs/%s/index.json?%s" slug mtime)
-           (expand-file-name devdocs-browser--index-json-filename doc-dir))
+           (format "%s/index.json?%s" slug mtime)
+           (expand-file-name devdocs-browser--index-json-filename doc-dir)
+           devdocs-browser-doc-base-url)
           (with-temp-file (expand-file-name devdocs-browser--metadata-filename doc-dir)
             (print doc (current-buffer)))
           (setq success t))
